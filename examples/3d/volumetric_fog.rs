@@ -54,6 +54,8 @@ fn main() {
         .add_systems(Update, tweak_scene)
         .add_systems(Update, (move_directional_light, move_point_light))
         .add_systems(Update, adjust_app_settings)
+        .add_systems(Update, move_camera)
+        .add_systems(Update, resize_volume)
         .run();
 }
 
@@ -118,7 +120,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>, app_settings: R
     // Add the fog volume.
     commands.spawn((
         FogVolume::default(),
-        Transform::from_scale(Vec3::splat(35.0)),
+        Transform::from_scale(Vec3::splat(5.0)).with_translation(Vec3::new(0.0, 2.0, 0.0)),
     ));
 
     // Add the help text.
@@ -135,7 +137,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>, app_settings: R
 
 fn create_text(app_settings: &AppSettings) -> Text {
     format!(
-        "{}\n{}\n{}",
+        "{}\n{}\n{}\n{}",
         "Press WASD or the arrow keys to change the direction of the directional light",
         if app_settings.volumetric_pointlight {
             "Press P to turn volumetric point light off"
@@ -146,7 +148,8 @@ fn create_text(app_settings: &AppSettings) -> Text {
             "Press L to turn volumetric spot light off"
         } else {
             "Press L to turn volumetric spot light on"
-        }
+        },
+        "Press F to move forward and B to move backward"
     )
     .into()
 }
@@ -264,5 +267,33 @@ fn adjust_app_settings(
     // Update the help text.
     for mut text in text.iter_mut() {
         *text = create_text(&app_settings);
+    }
+}
+
+fn move_camera(mut query: Query<&mut Transform, With<Camera3d>>,
+  keyboard_input: Res<ButtonInput<KeyCode>>,
+) {
+  let speed = 0.1;
+    for mut transform in query.iter_mut() {
+        if keyboard_input.pressed(KeyCode::KeyF) {
+            transform.translation -= Vec3::Z * speed;
+        }
+        if keyboard_input.pressed(KeyCode::KeyB) {
+            transform.translation += Vec3::Z * speed;
+        }
+    }
+}
+
+fn resize_volume(mut query: Query<&mut Transform, With<FogVolume>>,
+  keyboard_input: Res<ButtonInput<KeyCode>>,
+) {
+  let speed = 0.1;
+    for mut transform in query.iter_mut() {
+        if keyboard_input.pressed(KeyCode::KeyH) {
+            transform.scale += speed;
+        }
+        if keyboard_input.pressed(KeyCode::KeyN) {
+            transform.scale -= speed;
+        }
     }
 }
